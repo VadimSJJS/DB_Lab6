@@ -1,0 +1,255 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Аптека</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.0/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body>
+    <h2>Аптека</h2>
+    <form name="outgoing">
+        <label for="operationId" id="typeCRUD" name="typeCRUD">Добавить:</label>
+        <input type="hidden" name="id" value="0" />
+        <div class="form-group col-md-5">
+            <label for="ImplementationDate">Дата реализации:</label>
+            <input class="form-control" name="ImplementationDate" type="date" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="count">Количество:</label>
+            <input class="form-control" name="count" type="text" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="sellingPrice">Цена:</label>
+            <input class="form-control" name="sellingPrice" type="text" />
+        </div>
+        <div class="form-group col-md-5">
+            <label for="medicine">Лекарство:</label>
+            <select id="medicineId" name="medicineId"></select>
+        </div>
+        <div class="panel-body">
+            <button type="submit" id="submit" class="btn btn-primary">Сохранить</button>
+            <a id="reset" class="btn btn-primary">Сбросить</a>
+        </div>
+    </form>
+    <table class="table table-condensed table-striped  col-md-6">
+        <thead><tr><th>Id</th><th>Дата реализации</th><th>Количество</th><th>Цена</th><th>Лекарство</th><th></th></tr></thead>
+        <tbody id="data"></tbody>
+    </table>
+    <div>2019 © Metanit.com</div>
+    <script>
+        // сброс формы
+        function reset() {
+            var form = document.forms["outgoing"];
+            form.reset();
+            form.elements["id"].value = 0;
+            document.getElementById("typeCRUD").innerHTML = "Добавить:";
+        }
+        async function GetOutgoings() {
+            // отправляет запрос и получаем ответ
+            const response = await fetch("/api/Outgoing", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            // если запрос прошел нормально
+            if (response.ok === true) {
+                // получаем данные
+                const outgoings = await response.json();
+                let rows = document.querySelector("table tbody#data");
+                outgoings.forEach(outgoing => rows.append(row(outgoing)));
+            }
+        }
+        // Получение одного пользователя
+        async function GetOutgoing(id) {
+            const response = await fetch("/api/Outgoing/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const outgoing = await response.json();
+                const form = document.forms["outgoing"];
+                form.elements["id"].value = outgoing.id;
+                form.elements["ImplementationDate"].value = outgoing.implementationDate.substring(0, 10);
+                form.elements["count"].value = outgoing.count;
+                form.elements["sellingPrice"].value = outgoing.sellingPrice;
+                form.elements["medicineId"].value = outgoing.medicineId;
+            }
+        }
+        // Добавление пользователя
+        async function CreateOutgoing(ImplementationDate, Count, SellingPrice, MedicineId) {
+            const response = await fetch("api/Outgoing", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: 0,
+                    implementationDate: new Date(ImplementationDate).toISOString(),
+                    count: parseInt(Count, 10),
+                    sellingPrice: SellingPrice,
+                    medicineId: MedicineId
+                })
+            });
+            if (response.ok === true) {
+                const outgoing = await response.json();
+                reset();
+                document.querySelector("tbody").append(row(outgoing));
+            }
+        }
+        // Изменение пользователя
+        async function EditOutgoing(Id, ImplementationDate, Count, SellingPrice,MedicineId) {
+            const response = await fetch("api/Outgoing", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: parseInt(Id, 10),
+                    implementationDate: new Date(ImplementationDate).toISOString(),
+                    count: parseInt(Count, 10),
+                    sellingPrice: SellingPrice,
+                    medicineId: MedicineId
+                })
+            });
+            if (response.ok === true) {
+                const outgoing = await response.json();
+                reset();
+                document.querySelector("tr[data-rowid='" + outgoing.id + "']").replaceWith(row(outgoing));
+            }
+        }
+        // Удаление пользователя
+        async function DeleteOutgoing(id) {
+            const response = await fetch("/api/Outgoing/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const outgoing = await response.json();
+                document.querySelector("tr[data-rowid='" + outgoing.id + "']").remove();
+            }
+        }
+
+        // сброс формы
+        function reset() {
+            const form = document.forms["outgoing"];
+            form.reset();
+            document.getElementById("typeCRUD").innerHTML = "Добавить:";
+            form.elements["id"].value = 0;
+        }
+        // создание строки для таблицы
+        function row(outgoing) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", outgoing.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(outgoing.id);
+            tr.append(idTd);
+
+            const implementationDateTd = document.createElement("td");
+            implementationDateTd.append(outgoing.implementationDate);
+            tr.append(implementationDateTd);
+
+            const countTd = document.createElement("td");
+            countTd.append(outgoing.count);
+            tr.append(countTd);
+
+            const sellingPriceTd = document.createElement("td");
+            sellingPriceTd.append(outgoing.sellingPrice);
+            tr.append(sellingPriceTd);
+
+            const medicineTd = document.createElement("td");
+            medicineTd.append(outgoing.medicineId);
+            tr.append(medicineTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", outgoing.id);
+            editLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            editLink.append("Изменить");
+            editLink.addEventListener("click", async () => await Edit(outgoing.id)
+            );
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", outgoing.id);
+            removeLink.setAttribute("style", "cursor:pointer;padding:15px;");
+            removeLink.append("Удалить");
+            removeLink.addEventListener("click", async () => await Delete(outgoing.id)
+            );
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+        // сброс значений формы
+        document.getElementById("reset").addEventListener("click", () => reset());
+
+        // нажатие на ссылку Удалить
+        async function Delete(id) {
+            await DeleteOutgoing(id);
+            reset();
+        }
+        // отправка формы
+        document.forms["outgoing"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["outgoing"];
+            const id = form.elements["id"].value;
+            const implementationDate = form.elements["ImplementationDate"].value;
+            const count = form.elements["count"].value;
+            const sellingPrice = form.elements["sellingPrice"].value;
+            const medicineId = form.elements["medicineId"].value;
+            if (id == 0)
+                CreateOutgoing(implementationDate, count, sellingPrice, medicineId);
+            else
+                EditOutgoing(id, implementationDate, count, sellingPrice, medicineId);
+        });
+        async function Edit(id) {
+            document.getElementById("typeCRUD").innerHTML = "Изменить:";
+            await GetOutgoing(id);
+        }
+
+        // Получение списка видов топлива
+        async function GetMedicines() {
+            var listItems = "";
+            // отправляет запрос и получаем ответ
+            const outgoing = await fetch('/api/Outgoing/medicine', {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            // если запрос прошел нормально
+            if (outgoing.ok === true) {
+                // получаем данные
+                const employess = await outgoing.json();
+                listItems += "<option value=0 selected>(выбор)</option>";
+                employess.forEach(function (employes) {
+                    listItems += "<option value='" + employes.id + "'>" + employes.name + "</option>";
+                });
+                document.getElementById("medicineId").innerHTML = listItems;
+            }
+        }
+        async function GetProducers() {
+            var listItems = "";
+            // отправляет запрос и получаем ответ
+            const medicine = await fetch('/api/medicine/outgoing', {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            // если запрос прошел нормально
+            if (medicine.ok === true) {
+                // получаем данные
+                const additionalServices = await medicine.json();
+                listItems += "<option value=0 selected>(выбор)</option>";
+                additionalServices.forEach(function (additionalService) {
+                    listItems += "<option value='" + additionalService.id + "'>" + additionalService.name+ "</option>";
+                });
+                document.getElementById("additionalServiceId").innerHTML = listItems;
+            }
+        }
+
+        GetMedicines();
+        GetProducers();
+        // загрузка пользователей
+        GetOutgoings();
+
+    </script>
+</body>
+</html>
